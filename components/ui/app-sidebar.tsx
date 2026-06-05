@@ -16,17 +16,25 @@ export async function AppSidebar() {
   })
   if (!session) return null
 
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: {
-      username: true,
-      name: true,
-      image: true,
-      publicRepos: true,
-      followers: true,
-      following: true,
-    },
-  })
+  const [user, gitHubProfile] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: {
+        username: true,
+        name: true,
+        image: true,
+        publicRepos: true,
+        followers: true,
+        following: true,
+      },
+    }),
+    prisma.gitHubProfile.findUnique({
+      where: { userId: session.user.id },
+      select: { totalRepos: true },
+    }),
+  ])
+
+  const publicRepos = gitHubProfile?.totalRepos ?? user?.publicRepos ?? 0
 
   return (
     <Sidebar className="border-r border-[var(--border)] bg-[var(--sidebar)]">
@@ -63,7 +71,7 @@ export async function AppSidebar() {
         </p>
         <dl className="space-y-2 text-xs">
           {[
-            { label: "Public Repos", value: user?.publicRepos ?? 0 },
+            { label: "Public Repos", value: publicRepos },
             { label: "Followers", value: user?.followers ?? 0 },
             { label: "Following", value: user?.following ?? 0 },
           ].map(({ label, value }) => (

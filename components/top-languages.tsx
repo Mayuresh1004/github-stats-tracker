@@ -44,7 +44,7 @@ export function TopLanguages({
       ) : (
         <ul className="space-y-4">
           {entries.map(([name, bytes]) => {
-            const pct = total > 0 ? Math.round((bytes / total) * 100) : 0
+            const pct = total > 0 ? (bytes / total) * 100 : 0
             const color = barColor(name)
             return (
               <li key={name}>
@@ -56,12 +56,17 @@ export function TopLanguages({
                     />
                     {name}
                   </span>
-                  <span className="text-[var(--text-secondary)]">{pct}%</span>
+                  <span className="text-[var(--text-secondary)]">
+                    {Math.round(pct)}%
+                  </span>
                 </div>
                 <div className="h-1.5 overflow-hidden rounded-full bg-[var(--border)]">
                   <div
-                    className="h-full rounded-full transition-all"
-                    style={{ width: `${pct}%`, backgroundColor: color }}
+                    className="h-full min-w-[2px] rounded-full transition-all"
+                    style={{
+                      width: `${bytes > 0 ? Math.max(pct, 2) : 0}%`,
+                      backgroundColor: color,
+                    }}
                   />
                 </div>
               </li>
