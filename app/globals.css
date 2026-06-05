@@ -1,0 +1,60 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+:root {
+  --background: #0a0a0a;
+  --surface: #161b22;
+  --surface-elevated: #1c2128;
+  --border: #30363d;
+  --text-primary: #f0f6fc;
+  --text-secondary: #8b949e;
+  --text-muted: #6e7681;
+  --accent: #60a5fa;
+  --accent-foreground: #0a0a0a;
+  --green: #3fb950;
+  --green-muted: #238636;
+  --blue: #58a6ff;
+  --orange: #f78166;
+  --yellow: #e3b341;
+  --purple: #a371f7;
+  --sidebar: #0d0d0d;
+}
+
+body {
+  background: var(--background);
+  color: var(--text-primary);
+}
+
+.card-surface {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+}
+
+.text-gradient-brand {
+  background: linear-gradient(135deg, #60a5fa 0%, #3fb950 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  .export-print-target,
+  .export-print-target * {
+    visibility: visible;
+  }
+
+  .export-print-target {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    max-width: 640px;
+    margin: 2rem auto;
+  }
+}

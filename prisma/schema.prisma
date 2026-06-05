@@ -1,0 +1,138 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String         @id @default(uuid())
+  githubId      String?         @unique
+  username      String?
+  avatarUrl     String?
+  bio           String?
+  access_token  String?         @unique
+  createdAt     DateTime       @default(now())
+  events        GithubEvents[]
+  dailyStats    dailyStats[]
+  name          String
+  email         String
+  emailVerified Boolean        @default(false)
+  image         String?
+  updatedAt     DateTime       @updatedAt
+  sessions      Session[]
+  accounts      Account[]
+  contributionHistory ContributionHistory[]
+  gitHubProfile GitHubProfile?
+  publicRepos  Int?
+  followers    Int?
+  following    Int?
+
+  @@unique([email])
+  @@map("user")
+}
+
+model GithubEvents {
+  id         String   @id @default(uuid())
+  user       User     @relation(fields: [userId], references: [id])
+  userId     String
+  eventType  String
+  payload    Json
+  receivedAt DateTime @default(now())
+  processed  Boolean  @default(false)
+}
+
+model dailyStats {
+  id           String   @id @default(uuid())
+  user         User     @relation(fields: [userId], references: [id])
+  userId       String
+  date         DateTime
+  commits      Int
+  pullRequests Int
+  prs_merged   Int
+  issues       Int
+  reviews      Int
+  createdAt    DateTime @default(now())
+  @@unique([userId, date])
+
+
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([token])
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+model ContributionHistory {
+  id                String   @id @default(uuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id])
+  date              DateTime
+  contributionCount Int
+  
+  @@unique([userId, date])
+}
+
+model GitHubProfile {
+  id           String   @id @default(uuid())
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id])
+  totalRepos   Int
+  totalStars   Int
+  totalForks   Int
+  totalCommits Int      @default(0)
+  languages    Json
+  totalPRs     Int
+  totalIssues  Int
+  updatedAt    DateTime @updatedAt
+}
