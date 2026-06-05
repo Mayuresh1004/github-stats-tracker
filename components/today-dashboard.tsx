@@ -147,11 +147,10 @@ export function TodayDashboard() {
     reviews: 0,
   }
 
-  const hourly = Array.from({ length: 8 }, (_, i) => {
-    const hour = i * 3
-    const row = data?.serializedHourlyActivity.find((h) => h.hour === hour)
-    return { label: String(hour).padStart(2, "0"), events: row?.count ?? 0 }
-  })
+  const hourly = Array.from({ length: 24 }, (_, i) => {
+    const row = data?.serializedHourlyActivity.find((h) => h.hour === i)
+    return { label: String(i).padStart(2, "0"), events: row?.count ?? 0 }
+})
 
   const breakdown = [
     { name: "Commits", value: today.commits, color: "#3fb950" },
