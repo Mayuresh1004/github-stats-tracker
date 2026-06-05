@@ -104,13 +104,11 @@ export default async function Dashboard() {
         </p>
       )}
 
-      <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <ContributionHeatmap
-            username={user?.username ?? ""}
-            title={heatmapTitle}
-          />
-        </div>
+      <div className="mt-6 space-y-4">
+        <ContributionHeatmap
+          username={user?.username ?? ""}
+          title={heatmapTitle}
+        />
         <TopLanguages languages={languages} />
       </div>
 

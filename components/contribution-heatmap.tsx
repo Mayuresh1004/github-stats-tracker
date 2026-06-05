@@ -1,9 +1,11 @@
 "use client"
 
 import { GitHubCalendar } from "react-github-calendar"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 
-type Tip = { x: number; y: number; content: string } | null
+const BLOCK_SIZE = 11
+const BLOCK_MARGIN = 3
+const FONT_SIZE = 12
 
 export function ContributionHeatmap({
   username,
@@ -14,12 +16,52 @@ export function ContributionHeatmap({
   title?: string
   className?: string
 }) {
-  const [tip, setTip] = useState<Tip>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const calendarRef = useRef<HTMLDivElement>(null)
   const [mounted, setMounted] = useState(false)
+  const [containerWidth, setContainerWidth] = useState(0)
+  const [calendarWidth, setCalendarWidth] = useState(0)
+  const [calendarHeight, setCalendarHeight] = useState(0)
 
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  useEffect(() => {
+    const container = containerRef.current
+    if (!container) return
+
+    const updateContainerWidth = () => {
+      setContainerWidth(container.clientWidth)
+    }
+
+    updateContainerWidth()
+    const observer = new ResizeObserver(updateContainerWidth)
+    observer.observe(container)
+    return () => observer.disconnect()
+  }, [])
+
+  useEffect(() => {
+    const calendar = calendarRef.current
+    if (!calendar || !mounted) return
+
+    const updateCalendarSize = () => {
+      setCalendarWidth(calendar.scrollWidth)
+      setCalendarHeight(calendar.scrollHeight)
+    }
+
+    updateCalendarSize()
+    const observer = new ResizeObserver(updateCalendarSize)
+    observer.observe(calendar)
+    return () => observer.disconnect()
+  }, [mounted, username])
+
+  const showWeekdayLabels = containerWidth >= 360
+  const scale =
+    calendarWidth > 0 && containerWidth > 0
+      ? Math.min(1, containerWidth / calendarWidth)
+      : 1
+  const scaledHeight = calendarHeight > 0 ? calendarHeight * scale : 120
 
   if (!username) {
     return (
@@ -30,53 +72,50 @@ export function ContributionHeatmap({
   }
 
   return (
-    <div className={`card-surface overflow-hidden p-5 ${className ?? ""}`}>
+    <div className={`card-surface min-w-0 p-5 ${className ?? ""}`}>
       {title && (
         <h2 className="mb-4 text-base font-semibold text-[var(--text-primary)]">
           {title}
         </h2>
       )}
-      <div className="min-h-[120px] overflow-x-auto">
+      <div
+        ref={containerRef}
+        className="min-w-0 overflow-hidden"
+        style={{ height: mounted ? scaledHeight : 120 }}
+      >
         {mounted ? (
-          <GitHubCalendar
-            username={username}
-            colorScheme="dark"
-            theme={{
-              dark: ["#161b22", "#0e4429", "#006d32", "#26a641", "#39d353"],
+          <div
+            ref={calendarRef}
+            className="origin-top-left [&_.react-activity-calendar__scroll-container]:!overflow-x-hidden"
+            style={{
+              transform: `scale(${scale})`,
+              width: scale < 1 ? calendarWidth || undefined : undefined,
             }}
-            blockSize={11}
-            blockMargin={3}
-            fontSize={12}
-            renderBlock={(block, activity) => {
-              const handleEnter = (e: React.MouseEvent<SVGGElement>) => {
-                const r = e.currentTarget.getBoundingClientRect()
-                setTip({
-                  x: r.left + r.width / 2,
-                  y: r.top - 8,
-                  content:
+          >
+            <GitHubCalendar
+              username={username}
+              colorScheme="dark"
+              theme={{
+                dark: ["#161b22", "#0e4429", "#006d32", "#26a641", "#39d353"],
+              }}
+              blockSize={BLOCK_SIZE}
+              blockMargin={BLOCK_MARGIN}
+              fontSize={FONT_SIZE}
+              weekStart={0}
+              showWeekdayLabels={
+                showWeekdayLabels ? ["mon", "wed", "fri"] : false
+              }
+              showTotalCount={!title}
+              tooltips={{
+                activity: {
+                  text: (activity) =>
                     activity.count +
                     " contribution" +
                     (activity.count !== 1 ? "s" : ""),
-                })
-              }
-              return (
-                <g
-                  onMouseEnter={handleEnter}
-                  onMouseLeave={() => setTip(null)}
-                  style={{ cursor: "pointer" }}
-                >
-                  <rect
-                    x={block.props.x}
-                    y={block.props.y}
-                    width={block.props.width}
-                    height={block.props.height}
-                    fill={block.props.fill}
-                    rx={2}
-                  />
-                </g>
-              )
-            }}
-          />
+                },
+              }}
+            />
+          </div>
         ) : (
           <div
             className="h-[120px] animate-pulse rounded-lg bg-[var(--border)]/40"
@@ -84,26 +123,6 @@ export function ContributionHeatmap({
           />
         )}
       </div>
-      {tip && (
-        <div
-          style={{
-            position: "fixed",
-            left: tip.x,
-            top: tip.y,
-            transform: "translate(-50%, -100%)",
-            background: "#383838",
-            color: "#fff",
-            padding: "6px 10px",
-            borderRadius: "6px",
-            fontSize: "11px",
-            whiteSpace: "nowrap",
-            pointerEvents: "none",
-            zIndex: 1000,
-          }}
-        >
-          {tip.content}
-        </div>
-      )}
     </div>
   )
 }

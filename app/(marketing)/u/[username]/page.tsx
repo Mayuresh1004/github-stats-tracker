@@ -52,7 +52,6 @@ export default async function PublicProfile({
 
   return (
     <div className="min-h-screen bg-[var(--background)]">
-      <MarketingHeader showSignIn />
       <main className="mx-auto max-w-5xl px-4 py-8 md:px-8 md:py-10">
         <ProfileHeader
           username={user.username || ""}
@@ -99,17 +98,15 @@ export default async function PublicProfile({
           </p>
         )}
 
-        <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
-          <div className="lg:col-span-2">
-            <ContributionHeatmap
-              username={user.username ?? ""}
-              title={
-                totalContributions > 0
-                  ? `${totalContributions.toLocaleString()} contributions in the last year`
-                  : undefined
-              }
-            />
-          </div>
+        <div className="mt-6 space-y-4">
+          <ContributionHeatmap
+            username={user.username ?? ""}
+            title={
+              totalContributions > 0
+                ? `${totalContributions.toLocaleString()} contributions in the last year`
+                : undefined
+            }
+          />
           <TopLanguages languages={languages} />
         </div>
 
