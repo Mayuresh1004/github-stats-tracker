@@ -1,6 +1,6 @@
 # GitHub Stats Tracker
 
-Aggregates GitHub events (pushes, pull requests, issues, reviews) into per-user daily stats.
+Aggregates GitHub events (pushes, pull requests, issues, reviews) into per-user daily stats and overall stats.
 
 ## Features
 
