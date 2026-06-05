@@ -24,7 +24,7 @@ export default async function ProfileExportPage() {
 
   const userId = session.session.userId
 
-  const [user, gitHubProfile, streaks] = await Promise.all([
+  const [user, gitHubProfile, streaks, reviewSum] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -34,12 +34,17 @@ export default async function ProfileExportPage() {
         avatarUrl: true,
         image: true,
         followers: true,
+        following: true,
       },
     }),
     prisma.gitHubProfile.findUnique({
       where: { userId },
     }),
     getContributionStreaks(userId),
+    prisma.dailyStats.aggregate({
+      where: { userId },
+      _sum: { reviews: true },
+    }),
   ])
 
   if (!user?.username) {
@@ -61,10 +66,19 @@ export default async function ProfileExportPage() {
     username: user.username,
     bio: user.bio ?? "",
     avatarUrl: user.avatarUrl ?? user.image ?? "",
-    commits: gitHubProfile?.totalCommits ?? 0,
-    pullRequests: gitHubProfile?.totalPRs ?? 0,
-    stars: gitHubProfile?.totalStars ?? 0,
-    followers: user.followers ?? 0,
+    stats: {
+      commits: gitHubProfile?.totalCommits ?? 0,
+      prs: gitHubProfile?.totalPRs ?? 0,
+      issues: gitHubProfile?.totalIssues ?? 0,
+      stars: gitHubProfile?.totalStars ?? 0,
+      forks: gitHubProfile?.totalForks ?? 0,
+      repos: gitHubProfile?.totalRepos ?? 0,
+      followers: user.followers ?? 0,
+      following: user.following ?? 0,
+      reviews: reviewSum._sum.reviews ?? 0,
+      streak: streaks.currentStreak,
+      longestStreak: streaks.longestStreak,
+    },
     languages: topLanguages(languages),
     currentStreak: streaks.currentStreak,
     githubUrl,

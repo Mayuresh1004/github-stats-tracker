@@ -3,15 +3,15 @@
 import { formatCompact } from "@/lib/format-stats"
 import { GitBranch } from "lucide-react"
 import { CARD_STYLES, type CardStyleId } from "@/lib/profile-card-styles"
-import { cn } from "@/lib/utils"
 import {
-  Flame,
-  GitCommit,
-  GitPullRequest,
-  Star,
-  Users,
-} from "lucide-react"
-import { forwardRef } from "react"
+  CARD_STAT_OPTIONS,
+  DEFAULT_CARD_STATS,
+  type CardStatId,
+  type GitHubExportCardStats,
+} from "@/lib/profile-card-stats"
+import { cn } from "@/lib/utils"
+import { Flame } from "lucide-react"
+import { forwardRef, useMemo } from "react"
 
 const LANGUAGE_COLORS: Record<string, string> = {
   TypeScript: "#3178c6",
@@ -28,14 +28,18 @@ export type GitHubExportCardData = {
   username: string
   bio: string
   avatarUrl: string
-  commits: number
-  pullRequests: number
-  stars: number
-  followers: number
+  stats: GitHubExportCardStats
   languages: string[]
   currentStreak: number
   githubUrl: string
   hasGitHubProfile: boolean
+}
+
+function formatStatValue(id: CardStatId, value: number) {
+  if (id === "streak" || id === "longestStreak") {
+    return value.toLocaleString()
+  }
+  return formatCompact(value)
 }
 
 export const GitHubExportCard = forwardRef<
@@ -43,21 +47,28 @@ export const GitHubExportCard = forwardRef<
   {
     data: GitHubExportCardData
     styleId: CardStyleId
+    selectedStats?: CardStatId[]
     className?: string
   }
->(function GitHubExportCard({ data, styleId, className }, ref) {
+>(function GitHubExportCard(
+  { data, styleId, selectedStats = DEFAULT_CARD_STATS, className },
+  ref
+) {
   const style = CARD_STYLES.find((s) => s.id === styleId) ?? CARD_STYLES[0]
 
-  const stats = [
-    { label: "Commits", value: formatCompact(data.commits), icon: GitCommit },
-    {
-      label: "PRs",
-      value: formatCompact(data.pullRequests),
-      icon: GitPullRequest,
-    },
-    { label: "Stars", value: formatCompact(data.stars), icon: Star },
-    { label: "Followers", value: formatCompact(data.followers), icon: Users },
-  ]
+  const stats = useMemo(
+    () =>
+      selectedStats.map((id) => {
+        const option = CARD_STAT_OPTIONS.find((item) => item.id === id)!
+        return {
+          id,
+          label: option.shortLabel,
+          value: formatStatValue(id, data.stats[id]),
+          icon: option.icon,
+        }
+      }),
+    [data.stats, selectedStats]
+  )
 
   return (
     <div
@@ -98,9 +109,9 @@ export const GitHubExportCard = forwardRef<
         </div>
 
         <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {stats.map(({ label, value, icon: Icon }) => (
+          {stats.map(({ id, label, value, icon: Icon }) => (
             <div
-              key={label}
+              key={id}
               className="rounded-xl border border-[var(--border)] bg-[#161b22]/80 px-3 py-3"
             >
               <Icon className="mb-2 h-4 w-4 text-[var(--text-muted)]" />

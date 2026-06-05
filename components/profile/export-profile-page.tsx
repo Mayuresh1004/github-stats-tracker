@@ -6,6 +6,13 @@ import {
 } from "@/components/profile/github-export-card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import {
+  CARD_STAT_OPTIONS,
+  DEFAULT_CARD_STATS,
+  normalizeCardStats,
+  storageKeyForCardStats,
+  type CardStatId,
+} from "@/lib/profile-card-stats"
 import { CARD_STYLES, type CardStyleId } from "@/lib/profile-card-styles"
 import { cn } from "@/lib/utils"
 import { toPng } from "html-to-image"
@@ -19,7 +26,7 @@ import {
   ExternalLink,
 } from "lucide-react"
 import Link from "next/link"
-import { useCallback, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 
 export function ExportProfilePage({
   data,
@@ -30,9 +37,37 @@ export function ExportProfilePage({
 }) {
   const cardRef = useRef<HTMLDivElement>(null)
   const [styleId, setStyleId] = useState<CardStyleId>("ocean")
+  const [selectedStats, setSelectedStats] =
+    useState<CardStatId[]>(DEFAULT_CARD_STATS)
   const [copiedLink, setCopiedLink] = useState(false)
   const [copiedEmbed, setCopiedEmbed] = useState(false)
   const [exporting, setExporting] = useState(false)
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(storageKeyForCardStats(data.username))
+      if (saved) {
+        setSelectedStats(normalizeCardStats(JSON.parse(saved)))
+      }
+    } catch {
+      setSelectedStats(DEFAULT_CARD_STATS)
+    }
+  }, [data.username])
+
+  useEffect(() => {
+    if (selectedStats.length !== 4) return
+    localStorage.setItem(
+      storageKeyForCardStats(data.username),
+      JSON.stringify(selectedStats)
+    )
+  }, [data.username, selectedStats])
+
+  const toggleStat = useCallback((id: CardStatId) => {
+    setSelectedStats((prev) => {
+      if (prev.includes(id)) return prev
+      return [...prev.slice(1), id]
+    })
+  }, [])
 
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(profileUrl)}&bgcolor=161b22&color=e6edf3`
 
@@ -140,6 +175,7 @@ export function ExportProfilePage({
               ref={cardRef}
               data={data}
               styleId={styleId}
+              selectedStats={selectedStats}
               className="export-print-target max-w-2xl"
             />
             {!data.hasGitHubProfile && (
@@ -158,6 +194,37 @@ export function ExportProfilePage({
                 <ExternalLink className="h-3 w-3" />
               </Link>
             </p>
+          </section>
+
+          <section>
+            <h2 className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+              Stat Cards
+            </h2>
+            <p className="mb-3 text-xs text-[var(--text-secondary)]">
+              Choose 4 stats to show on your card. Tap another stat to swap it in.
+            </p>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+              {CARD_STAT_OPTIONS.map(({ id, label, icon: Icon }) => {
+                const selected = selectedStats.includes(id)
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => toggleStat(id)}
+                    className={cn(
+                      "flex items-center gap-2 rounded-xl border px-3 py-2.5 text-left text-sm transition-all",
+                      selected
+                        ? "border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--text-primary)] ring-1 ring-[var(--accent)]/40"
+                        : "border-[var(--border)] bg-[#161b22] text-[var(--text-secondary)] hover:border-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                    )}
+                    aria-pressed={selected}
+                  >
+                    <Icon className="h-4 w-4 shrink-0" />
+                    <span className="truncate">{label}</span>
+                  </button>
+                )
+              })}
+            </div>
           </section>
 
           <section>
