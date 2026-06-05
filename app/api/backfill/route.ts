@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth"
 import { backfillUser, BackfillError } from "@/lib/backfill"
 
-export async function GET(req: Request) {
+async function runBackfill(req: Request) {
   const session = await auth.api.getSession({
     headers: req.headers,
   })
@@ -17,4 +17,12 @@ export async function GET(req: Request) {
     const message = err instanceof BackfillError ? err.message : "Backfill failed"
     return Response.json({ error: message }, { status: 500 })
   }
+}
+
+export async function GET(req: Request) {
+  return runBackfill(req)
+}
+
+export async function POST(req: Request) {
+  return runBackfill(req)
 }

@@ -2,6 +2,7 @@
 
 import { MetricCard } from "@/components/metric-card"
 import { PageHeader } from "@/components/page-header"
+import { SyncNowButton } from "@/components/sync-now-button"
 import {
   GitCommit,
   GitPullRequest,
@@ -9,7 +10,7 @@ import {
   Eye,
   Zap,
 } from "lucide-react"
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import {
   Bar,
   BarChart,
@@ -92,12 +93,19 @@ export function TodayDashboard() {
   const [data, setData] = useState<TodayPayload | null>(null)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    fetch("/api/today")
-      .then((r) => r.json())
-      .then(setData)
-      .finally(() => setLoading(false))
+  const loadToday = useCallback(async () => {
+    const res = await fetch("/api/today")
+    if (!res.ok) {
+      throw new Error("Failed to sync today's activity")
+    }
+    setData(await res.json())
   }, [])
+
+  useEffect(() => {
+    loadToday()
+      .catch(() => setData(null))
+      .finally(() => setLoading(false))
+  }, [loadToday])
 
   const today = data?.todayStats ?? {
     commits: 0,
@@ -145,10 +153,13 @@ export function TodayDashboard() {
         subtitle={`Live activity for ${dateLabel} — stats from webhooks (dailyStats)`}
         icon={Zap}
         action={
-          <span className="inline-flex items-center gap-2 rounded-full border border-[var(--green-muted)] bg-[#0d2818] px-3 py-1 text-xs font-medium text-[var(--green)]">
-            <span className="h-2 w-2 animate-pulse rounded-full bg-[var(--green)]" />
-            Live
-          </span>
+          <div className="flex items-center gap-2">
+            <SyncNowButton onSync={loadToday} />
+            <span className="inline-flex items-center gap-2 rounded-full border border-[var(--green-muted)] bg-[#0d2818] px-3 py-1 text-xs font-medium text-[var(--green)]">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-[var(--green)]" />
+              Live
+            </span>
+          </div>
         }
       />
 

@@ -1,5 +1,6 @@
 import ContributionChart from "@/components/ContributionChart"
 import { ContributionHeatmap } from "@/components/contribution-heatmap"
+import { DashboardSyncButton } from "@/components/dashboard-sync-button"
 import { MetricCard } from "@/components/metric-card"
 import { PageHeader } from "@/components/page-header"
 import { StreakCard } from "@/components/streak-card"
@@ -67,6 +68,7 @@ export default async function Dashboard() {
       <PageHeader
         title="Dashboard"
         subtitle="Overview synced from GitHub via backfill."
+        action={<DashboardSyncButton />}
       />
 
       {gitHubProfile ? (
