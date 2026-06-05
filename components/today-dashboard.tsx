@@ -43,6 +43,8 @@ type TodayPayload = {
     receivedAt: string
     payload: unknown
   }[]
+  syncedEvents?: number
+  syncedAt?: string
 }
 
 function trend(
@@ -89,16 +91,41 @@ function eventLabel(type: string, payload: unknown) {
   }
 }
 
+async function fetchToday(method: "GET" | "POST" = "GET") {
+  const res = await fetch("/api/today", {
+    method,
+    cache: "no-store",
+    credentials: "same-origin",
+  })
+  const body = (await res.json().catch(() => ({}))) as TodayPayload & {
+    error?: string
+  }
+  if (!res.ok) {
+    throw new Error(body.error ?? "Failed to sync today's activity")
+  }
+  return body
+}
+
 export function TodayDashboard() {
   const [data, setData] = useState<TodayPayload | null>(null)
   const [loading, setLoading] = useState(true)
+  const [syncMessage, setSyncMessage] = useState<string | null>(null)
 
   const loadToday = useCallback(async () => {
-    const res = await fetch("/api/today")
-    if (!res.ok) {
-      throw new Error("Failed to sync today's activity")
-    }
-    setData(await res.json())
+    const payload = await fetchToday("GET")
+    setData(payload)
+  }, [])
+
+  const syncToday = useCallback(async () => {
+    const payload = await fetchToday("POST")
+    setData(payload)
+    const count = payload.syncedEvents ?? 0
+    setSyncMessage(
+      count > 0
+        ? `Synced ${count} new event${count === 1 ? "" : "s"}`
+        : "Already up to date"
+    )
+    window.setTimeout(() => setSyncMessage(null), 3000)
   }, [])
 
   useEffect(() => {
@@ -153,12 +180,17 @@ export function TodayDashboard() {
         subtitle={`Live activity for ${dateLabel} — stats from webhooks (dailyStats)`}
         icon={Zap}
         action={
-          <div className="flex items-center gap-2">
-            <SyncNowButton onSync={loadToday} />
-            <span className="inline-flex items-center gap-2 rounded-full border border-[var(--green-muted)] bg-[#0d2818] px-3 py-1 text-xs font-medium text-[var(--green)]">
-              <span className="h-2 w-2 animate-pulse rounded-full bg-[var(--green)]" />
-              Live
-            </span>
+          <div className="flex flex-col items-end gap-1">
+            <div className="flex items-center gap-2">
+              <SyncNowButton onSync={syncToday} />
+              <span className="inline-flex items-center gap-2 rounded-full border border-[var(--green-muted)] bg-[#0d2818] px-3 py-1 text-xs font-medium text-[var(--green)]">
+                <span className="h-2 w-2 animate-pulse rounded-full bg-[var(--green)]" />
+                Live
+              </span>
+            </div>
+            {syncMessage && (
+              <p className="text-xs text-[var(--green)]">{syncMessage}</p>
+            )}
           </div>
         }
       />

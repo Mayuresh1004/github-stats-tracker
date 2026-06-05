@@ -1,25 +1,15 @@
 import { auth } from "@/lib/auth"
-import { prisma } from "@/lib/db"
 import {
   aggregateStats,
   startOfToday,
   startOfTomorrow,
   startOfYesterday,
 } from "@/lib/aggregate-stats"
+import { prisma } from "@/lib/db"
+import { getUserIdFromSession } from "@/lib/session"
 
-export async function GET(req: Request) {
-  const session = await auth.api.getSession({
-    headers: req.headers,
-  })
-
-  if (!session) {
-    return new Response("Unauthorized", { status: 401 })
-  }
-
-  const userId = session.user.id
-
-  // Sync pending webhooks into dailyStats so Today reflects current data
-  await aggregateStats(userId)
+async function syncToday(userId: string) {
+  const syncedEvents = await aggregateStats(userId)
 
   const todayStart = startOfToday()
   const tomorrowStart = startOfTomorrow()
@@ -83,10 +73,53 @@ export async function GET(req: Request) {
     take: 10,
   })
 
-  return Response.json({
+  return {
     todayStats,
     yesterdayStats,
     recentEvents,
     serializedHourlyActivity,
+    syncedEvents,
+    syncedAt: new Date().toISOString(),
+  }
+}
+
+async function handleToday(req: Request) {
+  const session = await auth.api.getSession({
+    headers: req.headers,
   })
+
+  if (!session) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
+  const userId = getUserIdFromSession(session)
+  if (!userId) {
+    return Response.json({ error: "Invalid session" }, { status: 401 })
+  }
+
+  try {
+    const payload = await syncToday(userId)
+    return Response.json(payload, {
+      headers: {
+        "Cache-Control": "no-store",
+      },
+    })
+  } catch (err) {
+    console.error("[api/today] sync failed:", err)
+    return Response.json(
+      {
+        error:
+          err instanceof Error ? err.message : "Failed to sync today's activity",
+      },
+      { status: 500 }
+    )
+  }
+}
+
+export async function GET(req: Request) {
+  return handleToday(req)
+}
+
+export async function POST(req: Request) {
+  return handleToday(req)
 }
