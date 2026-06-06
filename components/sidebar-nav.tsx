@@ -16,7 +16,7 @@ const navItems: { title: string; url: string; icon: LucideIcon }[] = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Today", url: "/today", icon: Zap },
   { title: "Profile", url: "/profile", icon: User },
-  { title: "Settings", url: "/settings", icon: Settings },
+  // { title: "Settings", url: "/settings", icon: Settings },
 ]
 
 export function SidebarNav() {
