@@ -63,7 +63,10 @@ async function syncToday(userId: string) {
   })
 
   const recentEvents = await prisma.githubEvents.findMany({
-    where: { userId },
+    where: {
+      userId,
+      receivedAt: { gte: todayStart, lt: tomorrowStart },
+    },
     orderBy: { receivedAt: "desc" },
     select: {
       eventType: true,

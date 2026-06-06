@@ -287,7 +287,7 @@ export function TodayDashboard() {
       <div className="card-surface mt-6 p-5">
         <div className="mb-4">
           <h2 className="text-base font-semibold">Live Event Feed</h2>
-          <p className="text-xs text-[var(--text-muted)]">webhook · real-time</p>
+          <p className="text-xs text-[var(--text-muted)]">webhook · today only</p>
         </div>
         <ul className="divide-y divide-[var(--border)]">
           {(data?.recentEvents ?? []).length === 0 ? (
