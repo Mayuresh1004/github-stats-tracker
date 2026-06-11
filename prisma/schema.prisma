@@ -47,6 +47,7 @@ model GithubEvents {
   payload    Json
   receivedAt DateTime @default(now())
   processed  Boolean  @default(false)
+  deliveryId String?   @unique 
 }
 
 model dailyStats {

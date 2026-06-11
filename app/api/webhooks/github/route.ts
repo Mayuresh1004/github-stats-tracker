@@ -8,7 +8,7 @@ const verifySignature = (secret: string, payload: string, signature: string) => 
     return crypto.timingSafeEqual(Buffer.from(digest), Buffer.from(signature))
 }
 
-const handleUserInfo = async (payload:string, action:string) => {
+const handleUserInfo = async (payload:string, action:string, deliveryId:string) => {
     const parsedPayload = JSON.parse(payload)
     const githubId = parsedPayload.sender.id
     
@@ -19,14 +19,23 @@ const handleUserInfo = async (payload:string, action:string) => {
     })
 
     if(user){
-        await prisma.githubEvents.create({
+        try {
+            await prisma.githubEvents.create({
             data:{
                 userId: user.id,
                 eventType: action,
                 payload: parsedPayload,
-                processed: false
+                processed: false,
+                deliveryId: deliveryId
             }
         })
+        } catch (e:any) {
+            if (e.code === 'P2002') {
+                console.warn(`Duplicate deliveryId: ${deliveryId} already exists, skipping event processing.`)
+            }
+            throw e;
+        
+        }
     }
 }
 
@@ -35,6 +44,10 @@ export const POST = async (req: Request) => {
     const body = await req.text()
     const signature = req.headers.get('x-hub-signature-256') as string
     const action = req.headers.get('x-github-event') as string
+    //  X-GitHub-Delivery header can be used for idempotency if needed
+    const deliveryId = req.headers.get('x-github-delivery') as string
+    if (!deliveryId) return Response.json({ error: 'Missing delivery ID' }, { status: 400 })
+
 
     
 
@@ -42,7 +55,7 @@ export const POST = async (req: Request) => {
     return new Response("Unauthorized", { status: 401 })
 }
 
-    await handleUserInfo(body,action);
+    await handleUserInfo(body,action,deliveryId);
 
     console.log("Webhook body:", body);
 
